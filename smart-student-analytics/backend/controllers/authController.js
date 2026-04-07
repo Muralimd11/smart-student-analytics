@@ -85,12 +85,18 @@ exports.register = async (req, res) => {
             }
         });
     } catch (error) {
-        await t.rollback();
+        try {
+            if (!t.finished) {
+                await t.rollback();
+            }
+        } catch (rollbackError) {
+            console.error('Rollback error:', rollbackError);
+        }
         console.error('Registration Error:', error);
 
         let message = error.message;
         if (error.name === 'SequelizeValidationError' || error.name === 'SequelizeUniqueConstraintError') {
-            message = error.errors.map(e => e.message).join(', ');
+            message = error.errors?.map(e => e.message).join(', ') || message;
         }
 
         res.status(400).json({ // Changed to 400 for validation errors
